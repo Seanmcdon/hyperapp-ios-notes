@@ -1,0 +1,229 @@
+*{
+  margin: 0;
+  box-sizing: border-box;
+  font-size:1em;
+  font-family: "-apple-system", sans-serif;
+}
+
+.page{
+  position: absolute;
+  left: -100vw;
+  background:white;
+  width: 100vw;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.container {
+    padding-left: 1em;
+    padding-top: 1em;
+}
+
+.current-page{
+  left: 0vw;
+}
+
+.page:not(.current-page){
+  background-color:#F8F8F8;
+}
+
+.nav{
+  font-size: 1.2em;
+  display:  grid;
+  grid-template-columns: 65% 25%;  
+  margin-bottom:.5em;
+}
+
+.footer{
+  position: absolute;
+  top: 80vh;
+  color: blue;
+  text-decoration: underline;
+  left: 70vw;
+}
+
+.footer img{
+  height: 25px;
+  width: 25px;
+  position: relative;
+  left: 15vw;
+}
+
+.nav p span{
+  color: orange;
+}
+
+.nav .nav-left{
+    text-align: left;
+}
+
+.nav .nav-right{
+  text-decoration: underline; 
+  text-decoration-color: orange;  
+  text-align: right;  
+}
+
+.content{
+  padding:2em;
+}
+
+.heading {
+    font-size: 2em;
+    padding: 0 0 .5em 0;
+}
+
+.folder-list > div,
+.file-list > div{
+    background: white;
+    padding: .15em;
+    line-height: 1.75em;
+    display:  grid;
+    grid-template-columns: 90% 10%;
+    position: relative;
+}
+
+.file-list > div{
+  height: 4em;
+}
+
+.folder-list .text-over,
+.file-list .text-over{
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 999;
+  background: white;
+  height: 80%;
+  min-width:10em;
+}
+
+.file-list .text-over{
+  top: .5em;
+}
+
+.text-over img {
+    margin: 0 0 0 1em;
+    width: 1em;
+    height: 1em;
+}
+
+.folder-list .circle-under,
+.file-list .circle-under{
+    position: absolute;
+    left: 0;
+    top: .5em;
+    z-index: 888;
+    border: 1px solid;
+    width: 1em;
+    height: 1em;
+    border-radius: 1em;
+}
+
+.file-list .circle-under{
+    top: 1.75em;
+}
+
+.circle-under.clicked{
+  background-color: orange;
+}
+
+.circle-under:not(.clicked){
+  background-color:white;
+}
+
+.folder-list,
+.file-list{
+    display: grid;
+    grid-row-gap: 1px;  
+    background: lightgray;
+    color: #545050;
+    font-weight: 300;
+    padding-bottom: 1px;
+}
+
+.file-title {
+    font-weight: 600;
+}
+
+textarea{
+  width:calc(100% - 1em); 
+  height: 100vh;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  border: 0px;
+}
+
+.page[data-move="slideOutRight"]{
+  animation: .2s ease-in 0s forwards slideOutRight;
+}
+.page[data-move="slideOutLeft"]{
+  animation: .2s ease-in 0s forwards slideOutLeft;
+}
+.page[data-move="slideInRight"]{
+  animation: .2s ease-in 0s forwards slideInRight;
+}
+.page[data-move="slideInLeft"]{
+  animation: .2s ease-in 0s forwards slideInLeft;
+}
+
+.slideTextRight{
+  animation: .2s ease-in 0s forwards slideTextRight;
+}
+.slideTextLeft{
+  animation: .2s ease-in 0s forwards slideTextLeft;
+}
+
+
+@keyframes slideOutRight{
+  from{
+    left: 0vw;
+  }
+  to{
+    left:100vw;
+  }
+}
+
+@keyframes slideOutLeft{
+  from{
+    left: 0vw;
+  }
+  to{
+    left:-100vw;
+  }
+}
+@keyframes slideInRight{
+  from{
+    left: 100vw;
+  }
+  to{
+    left:0vw;
+  }
+}
+
+@keyframes slideInLeft{
+  from{
+    left: -100vw;
+  }
+  to{
+    left:0vw;
+  }
+}
+
+@keyframes slideTextRight{
+  from{
+    left: 0;
+  }
+  to{
+    left: 2em;
+  }
+}
+
+@keyframes slideTextLeft{
+  from{
+    left: 2em;
+  }
+  to{
+    left: 0;
+  }
+}
