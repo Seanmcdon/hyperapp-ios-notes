@@ -1,417 +1,315 @@
-import { h, app } from "https://unpkg.com/hyperapp"
+import { h, text, app } from "https://unpkg.com/hyperapp"
 
-const pageBack = (state, pages) => {
+app({
+  node: document.getElementById('app'),
+  init: {attr: {"loggedIn":true, currentPage:"current-page", editing:false},
+          folders:[
+    {"index":"10","title":"School Ideas","files":[{"index":"15", "content":"ABC 3D by Marion Bataille  OK yes hi"}]},
+    {"index":"15","title":"Info","files":[]},
+    {"index":"20","title": "Files", "files": [{index: 99,  "content":"my info"}]},
+    {"index":"18","title":"To do ","files":[]},
+    {"index":"19","title":"Passwords","files":[{"index":"25", "content":"Router\nadmin\nGo******"}]},
+    {"index":"20","title":"Yo","files":[{"index":"30", "content":"yoyoyo!"}]}
+    ]},
+    view: state => h("div", {}, view(state))
+}) 
+
+const view = json => TableOfContentsPage(json).concat(GetFolderPages(json)).concat(GetFilePages(json).concat(MessagePage(json)))
+
+//TABLE OF CONTENTS
+const TableOfContentsPage = json => [h("div", 
+                                       { 
+                                     id: "tableofcontents",
+                                     class: "page "+json.attr.currentPage }, 
+                                        [ TOCNav(json.attr.editing), TOCHeader(json), TOCContent(json), TOCFooter(json)] )]
+
+const TOCNav = editing => h("div", { id: "toc-nav"}, 
+                            h("p", 
+                              { onclick: editTOC }, 
+                              (editing)? text("Cancel") : text("Edit")))
+                                
+const TOCHeader = json => h("h1", { class: "pad-left"},  
+                            (json.attr.editing)? text(countSelected(json.folders)+" Selected") : text("Folders"))
+
+const TOCContent = json => h("div", { id: "toc-content" }, json.folders.map((i, ind)=>
+         h("div", { onclick: [toFolder,ind] }, [
+            h("div", { class: "folder-title-left"}, [
+                h("div", { class: (json.attr.editing)? "text-over slideTextRight" : "text-over slideTextLeft"}, [
+                   text(i.title), 
+                   (json.attr.editing)? 
+                   h("div", { class: "pencil", "data-id" : ind, onclick:updateFolder }) 
+                   :text("") 
+                  ]),
+                  h("div", { 'data-ind':ind, class: (i.clicked)? "circle-under clicked" : "circle-under", 
+                             onclick : selectedFolder })
+              ]),
+            h("div", {class:"folder-title-right"}, text(i.files.length+" >"))])))
+
+const TOCFooter = (state) => ( 
+  (!state.attr.editing)? h("div", { id:"toc-footer", onclick: createFolder, }, text("New Folder"))
+  : h("div", { id:"toc-footer", onclick: deleteFolder}, 
+      (countSelected(state.folders) > 1)? text("Delete Folders") : 
+      (countSelected(state.folders) > 0)? text("Delete Folder") :
+      text("")))
+
+
+//FOLDERS
+const GetFolderPages = json => json.folders.map((i,ind)=>Folder(i, ind))
+const Folder = (i,ind) => h("div", { id: "folder-"+ind,
+                                         class: "page "+i.currentPage }, 
+                          [ FolderNav(i,ind), FolderHeader(i), FolderContent(i), FolderFooter(i)])
+//FOR EACH FOLDER...
+const FolderNav = (i, ind) => h("div", { class: "folder-nav"}, [
+                            h("div", { class:"folder-nav-left", 
+                                      onclick: toTOC }, 
+                              text("< folders")),
+                            h("div", { class:"folder-nav-right", onclick: [editFolder, i]
+                                      }, 
+                                     (i.editing)? text("Cancel") : text("Edit"))
+                            ])
+
+const FolderHeader = i => h("h1", { class: "pad-left" }, 
+                            (i.editing)? text(countSelected(i.files)+" Selected") 
+                            : text(i.title))
+
+const FolderContent = i => h("div", { class: "folder-content"}, i.files.map(( j, ind)=>
+                                                           
+         h("div", { onclick: [toFile,j] },[
+            h("div", { class: "file-title-left"}, 
+              [
+                h("div", { class: (i.editing)? "text-over slideTextRight" : "text-over slideTextLeft"},
+                   text(j.content.substr(0,5)+"  ...")),
+                  h("div", { "data-folder":i.index, "data-file":ind, class: (j.clicked)? "circle-under clicked" : "circle-under", 
+                             onclick : selectedFile })
+              ]),
+            h("div", {class:"file-title-right"}, text(">"))] )  ) )
+                                                                            
   
-  pages.evt.preventDefault();
+
+const FolderFooter = f => ( 
+  (!f.editing)? h("div", { class:"folder-footer", onclick: [createFile,f.index] }, text("New Note"))
+  : h("div", { class:"folder-footer", onclick: [deleteFile,f]}, 
+      (countSelected(f.files) > 1)? text("Delete Notes") : 
+      (countSelected(f.files) > 0)? text("Delete Note") :
+      text("")))
+
+//FILES
+const GetFilePages = json => json.folders.reduce( (accumulator, currentValue) => 
+  [...accumulator, ...currentValue.files], []).map(i=>File(i))
+const File = i => h("div", {id: "file-"+i.index, class: "page "+i.currentPage }, [ FileNav(i) /*, FileHeader(i)*/, FileContent(i) /*, FileFooter(i) */])
+//FOR EACH FILE...
+const FileNav = i => h("div", { class: "file-nav"}, 
+                            h("div", { class:"file-nav-left", 
+                                      onclick: [leaveFile, i] }, 
+                              text("< "+i.folderName)))
+
+const FileHeader = file => h("h1", {class:"pad-left"}, text("File Contents"));
+const FileContent = file => h("textarea", {class:"pad-left", 
+                                           onkeyup:withPayload(
+                                           (event) => [fileUpdate,{ f: file, event: event }]
+                                           )}, 
+                                           text(file.content));
+const FileFooter = file => h("div", {}, text("File footer"));
+ 
+//Prompt Page
+const MessagePage = (state) =>{
   
-  var to = document.getElementById(pages.to);
-  var from = document.getElementById(pages.from); 
+  if(state.prompt){
   
-  from.setAttribute("data-move", "slideOutRight");
-  to.setAttribute("data-move", "slideInLeft");
-  
-  return { 
-    ...state,
-    attr : {
-       ...state.attr,
-       currentPage : pages.to,
-       prevPage : pages.from
-    }  
-  }	
-  	
+  return [h("div", { class: "prompt" }, [
+            h("h3", {}, text(state.prompt.message)),
+            h("input", { id:"user-input", oninput: MessagePageInput } ),
+            h("button", { onclick: [state.prompt.callback, state.prompt.input] },
+               text(state.prompt.button)),
+            h("button", { onclick: cancelPrompt}, text("cancel"))]
+           )];
+  }
+  else return null;
 }
-const pageForward = (state, pages) => {  
+const MessagePageInput = (state, input) =>{
+  return {...state, prompt: { ...state.prompt, input : input.target.value } };
+}
+const cancelPrompt = state =>({...state, prompt:null })
+
+//ACTIONS
+const withPayload = (filter) => (_, x) => filter(x);
+
+const editTOC = state =>{ return {...state, attr: { ...state.attr, editing: !state.attr.editing } } }
+const editFolder = (state, folder) =>{
+  state.folders.forEach((i,ind)=>{ 
+    if(i.index == folder.index){
+      i.editing = !i.editing;   
+    }
+  }); 
+  return { ...state,
+            folders: [ ...state.folders ]
+         };
+} 
+const countSelected = folders => folders.reduce((accum, curr)=>(accum + (curr.clicked? 1 : 0)), 0)
+const deleteFolder = (state) =>{
   
-  pages.evt.preventDefault();
+  state.folders = state.folders.filter((i,ind) => i.clicked !== true)
   
-  var to = document.getElementById(pages.to);  
-  var from = document.getElementById(pages.from);  
-    
-  from.setAttribute("data-move", "slideOutLeft");
-  to.setAttribute("data-move", "slideInRight");
-  
-  return { 
+  return {
     ...state,
-    attr : {
-       ...state.attr,
-       currentPage : pages.to,
-       prevPage : pages.from
-    }  
+    folders:[
+      ...state.folders
+    ]
   }
   
 }
 
-const noteKeyDown = (state, payload) => {
-  
-  if(state.attr.typingTimer) clearTimeout(state.attr.typingTimer);
 
-  state.currentNote = {};
-  state.currentNote.file = state.folders[payload.page].files[payload.note].index;
-  state.currentNote.content = payload.evt.target.value;
-  
-  state.attr.typingTimer = setTimeout(function(){
-    
-    transferData(updateNoteComplete, { url: "json.php", data: { func: "update_file", 
-      content: state.currentNote.content, 
-      note: state.currentNote.file
-    }});
 
-  }, 2000);
-  
-  
-  state.folders[payload.page].files[payload.note].content = payload.evt.target.value;
+const createFolder = (state) => {
+      return { 
+        ...state,
+        prompt : { message: "New Folder Title", button: "create folder", callback: newFolderNamed }
+      }
+  //}
+  //else return state;
+}
 
-  return { 
+const deleteFile = (state, folder) =>{
+  
+  folder.files = folder.files.filter((i,ind) => i.clicked !== true)
+  
+  return {
     ...state,
-    folders: [
+    folders:[
       ...state.folders
     ]
   }  
-}
-  
-const title = (str) => {
+} 
 
-  if(!str) str = " ";
 
-  var arr = str.split("\n");
-
-  var title = arr[0].split(" ", 4).join(" "),
-      content = "";
+const createFile = (state, index) => {
       
-  //does the file have more than one line?
-  //if so, use the second line as the content
-
-  if(arr.length > 1){
-
-    for(var i = arr.length - 1; i > 0; i--){
-      if(arr[i].length > 0) content = arr[i].split(" ", 4).join(" ");
-    }
-    
-  }
-
-
-    return { title: title, content: content };
-
-}
-
-const editTOC = (state) => {
-
- if(state.attr.editing){
-   
-   for(var i = 0; i < state.folders.length; i++){
-     state.folders[i].clicked = false;
-   }
-   
- }  
- 
- return {
-   ...state,
-   attr : {
-     ...state.attr,
-     editing : !state.attr.editing
-   },
-   folders : [
-     ...state.folders  
-   ]
- }} 
-
-const editFolder = (state, payload) => {  
- 
- if(state.folders[payload.pageIndex].editing){
-   for(var i = 0; i < state.folders[payload.pageIndex].files.length; i++){
-     if(state.folders[payload.pageIndex].files[i].clicked){
-       state.folders[payload.pageIndex].files[i].clicked = false;
-     }
-   }
- }
-
- state.folders[payload.pageIndex].editing = !state.folders[payload.pageIndex].editing;
- 
- return {
-   ...state,
-   folders : [
-     ...state.folders
-   ]  	
-}}  
-    
-const tocFolderSelected = (state, payload) => {
-
-  payload.evt.stopPropagation();
-  //event, from, id
+      state.folders.forEach((i)=>{
+        if(i.index == index)i.files.push({index:i.index+"-"+i.files.length, content:""})
+      });
   
-  state.folders[payload.id].clicked = !state.folders[payload.id].clicked;
-  
-  console.log(state);
-  
-  return {
-  	...state,
-  	folders : [
-  		...state.folders
-  	]
-  }
-} 
-
-const fileSelected = (state, payload) => {
-
-  console.log(state);
-
-
-  payload.evt.stopPropagation();
-  //event, from, id
-  
-  state.folders[payload.from].files[payload.id].clicked = !state.folders[payload.from].files[payload.id].clicked;
-  
-  return {
-  	...state,
-  	folders : [
-  		...state.folders,
-  	]
-  }
-} 
- 
-//count how many items are clicked inside a folder or TOC 
-const countSelected = items => {
-  
-  var c = 0;
-  for(var i = 0; i < items.length; i++){
-    if(items[i].clicked) c++;
-  }
-  return c;
-  
-}
-
-//DONE
-const createFolder = (state, payload) => {
-  var str = prompt("Name for new folder: ");
-
-  if(str){
-      return [{ 
+      return { 
         ...state,
-        folders : [
-        ...state.folders,
-        { title : str, files : [] }]
-      },
-      [ transferData, { onresponse: createFolderComplete, url:"json.php", data: { data: str, func: "create_folder" } } ]
-      ]
-  }
-  else return state;
-}
-const createFolderComplete = (state, data) => { 
-  console.log(data);
-  state.folders[state.folders.length-1].index = data["data"];
-  return state; } 
-
-//DONE
-const createNote = (state, payload) => { 
-  state.folders[payload.id].files.push({ content: "new note" })     
-        
-  return [{ 
-        ...state,
-        folders : [
-        ...state.folders ] },
-        
-        [ transferData, { onresponse: createNoteComplete, url: "json.php", data: { func: "create_file", folder: state.folders[payload.id].index } }  ]
-        
+        folders:[
+          ...state.folders
         ]  
+      
+      }
 }
-const createNoteComplete = (state, data) => { 
-  for(var i = 0; i < state.folders.length; i++){
-    if(state.folders[i].index == data.folderId){
-      state.folders[i].files[state.folders[i].files.length-1].index = data.data;
+
+const toFolder = (state, folder) =>{ 
+  state.folders[folder].currentPage = "slideInRight";
+  return {
+    ...state,
+    folders: [...state.folders],
+    attr : { ... state.attr, currentPage : "slideOutLeft" }
+  }
+}
+
+const toTOC = state =>{ 
+  state.folders.forEach(i=>i.currentPage = "slideOutRight");
+  return { ...state, 
+           attr: { ...state.attr, currentPage: "slideInLeft" }
+         }
+}
+
+const toFile = (state, k) =>{ 
+   state.folders.forEach((i,ind)=>i.files.forEach(j=>{
+  
+   if(j.index == k.index){
+    j.currentPage = "slideInRight";
+    j.folderName = i.title;
+    state.folders[ind].currentPage = "slideOutLeft" 
+   }
+  }));
+  
+  return { ...state,
+            folders: [ ...state.folders ]
+         };
+}
+
+const leaveFile = (state, file) => {
+  state.folders.forEach((i,ind)=>i.files.forEach((j, jind)=>{ 
+    if(j.index == file.index){
+      state.folders[ind].files[jind].currentPage = "slideOutRight";
+      state.folders[ind].currentPage = "slideInLeft";
+    }   
+  }));
+  
+  return { ...state,
+            folders: [ ...state.folders ]
+         };
+}
+
+const selectedFolder = (state, event) =>{ 
+  
+  event.stopPropagation();
+    
+  state.folders[event.target.getAttribute("data-ind")].clicked = 
+  !state.folders[event.target.getAttribute("data-ind")].clicked;
+  return { ...state, folders: [ ...state.folders ] }; 
+};
+
+const selectedFile = (state, event) =>{ 
+  
+  event.stopPropagation();
+    
+  state.folders.forEach(i=>{
+    if(i.index == event.target.getAttribute("data-folder")){
+       
+       i.files[event.target.getAttribute("data-file")].clicked = 
+       !i.files[event.target.getAttribute("data-file")].clicked;    
     }
-  }
-  return state;
- } 
+  });
+  
+  console.log(state);
+  
+  return { ...state, folders: [ ...state.folders ] }; 
+};
 
-//DONE
-const updateFolder = (state, payload) => {
-  
-    payload.evt.stopPropagation();
-  
-  var str = prompt("Rename folder: ");
-
-  if(str){
-    state.folders[payload.folder].title = str;
-    return [{ 
-      ...state,
-      attr: {
-        ...state.attr,
-        editing: false
-      },
-      folders : [
-      ...state.folders ]
-    },
-    [ transferData, { onresponse: createFolderComplete, url: 'json.php', data: { name: str, id: state.folders[payload.folder].index, func: "update_folder" } }] ];
-    
-    
-  }
-  else return state;
-  
+const updateFolder = (state, event) => {
+  event.stopPropagation();
+  return { ...state, 
+          prompt : { message: "Edit Folder Title", button: "rename folder", 
+                    callback: FolderRenamed, data: event.target.getAttribute("data-id") }
+         } 
 }
-const updateFolderComplete = (state, data) => { return state; }    
-
-//DONE
-//const updateNote = (state, payload) => { }
-const updateNoteComplete = (state, data) => { 
-  return state; 
-}    
-
-//DONE
-const deleteFolder = (state, payload) => {
-
-  var arr = [],
-      deleteArr = [];
+const FolderRenamed = (state) =>{
+  state.folders[state.prompt.data].title 
+    = state.prompt.input; 
   
-  for(var i = 0; i < state.folders.length; i++){
-    if(!state.folders[i].clicked) arr.push(state.folders[i]);
-    else deleteArr.push(state.folders[i].index);
-  }
- 
-  state.folders = arr;
-
-  return [{ 
-    ...state,
-    attr : { 
-      ...state.attr,
-      editing : false },
-    folders : [
-      ...state.folders
-    ]
-  }, [transferData, { onresponse: deleteFolderComplete, url: "json.php", data: { data: deleteArr, func: "delete_folder" }}] ]   
+  console.log(state);
   
-}
-const deleteFolderComplete = (state, data) => { return state; } 
-
-//DONE
-const deleteNote = (state, payload) => {
-
-  var arr = [],
-      deleteArr = [];
-  
-  for(var i = 0; i < state.folders[payload.pageIndex].files.length; i++){
-    if(!state.folders[payload.pageIndex].files[i].clicked) arr.push(state.folders[payload.pageIndex].files[i]);
-    else deleteArr.push(state.folders[payload.pageIndex].files[i].index);
-  }
- 
-  state.folders[payload.pageIndex].files = arr;
-
-
-
-  return [{ 
-    ...state,
-    attr : { 
-      ...state.attr,
-      editing : false },
-    folders : [
-      ...state.folders
-    ]
-  }, [transferData, { onresponse: deleteNoteComplete, url: "json.php", data: { data: deleteArr, func: "delete_file" }}] ]   
-   
-  
-  
-}
-const deleteNoteComplete = (state, data) => { return state; } 
-
-// VIEW //
-
-/*
- 
- RETURN AN ARRAY, SECOND PART OF ARRAY IS THE HTTP - SEE
- https://hyperapp.dev/tutorial#declaringeffects
- 
- create folder
- create note
- 
- update folder { name }
- update note { content ( there is no name ) }
- 
- delete folder
- delete note
-
-*/
-
-//EFFECTS (SENDING/RECIEVING)
-
-const transferData = (dispatch, options) =>
-  fetch(options.url, {method: 'POST', body: JSON.stringify(options.data)})
-    .then(response => response.json())
-    .then(data => dispatch(options.onresponse, data))
-    .catch(() => dispatch(options.onresponse, {}))
-    
-//VIEW//    
-
-const nav = (to, from, edit, editing, pageIndex) => (
-  h("div", {class:"nav"}, 
-    h("p", {class: "nav-left", ontouchstart: (to)? [pageBack, e => ( { evt: e, to: to, from: from } )] : ""}, 
-      h("span", {}, to? "<" : "")),
-    h("p", {class: "nav-right" }, 
-      h("span", { onclick: (from == "tableofcontents")? [ editTOC, e => ({ evt: e }) ] 
-      : [ editFolder, e => ({ evt: e, pageCalled: from, pageIndex: pageIndex }) ]}, 
-      (edit)? ((editing)? "Cancel" : "Edit" ) : "", )))) 
-
-const footer = (editing) => ( (!editing)? h("div", { class:"footer", onclick: createFolder, }, "New Folder")
-                         : h("div", { class:"footer", onclick: deleteFolder, }, "Delete Folder"))
-
-const fileFooter = (editing, pageIndex) => ( (!editing)? h("div", { class:"footer", onclick: [createNote, { id : pageIndex }] }, 
-                          h("img", { src : "https://sean-mcdonald.com/images/icons8-pencil-50.png"}, "")    )
-                         : h("div", { class:"footer", onclick: [deleteNote, e => ({ evt: e, pageIndex: pageIndex }) ]  }, "Delete") )
-
-const tableOfContents = (props) => ( h("div", {class: (props.attr.currentPage == "tableofcontents")? "page current-page" : "page", id: "tableofcontents"}, 
-  h("div", {class:"container"}, 
-    nav("", "tableofcontents", true, props.attr.editing),
-    h("h1", { class: "heading"}, (props.attr.editing)? countSelected(props.folders)+" Selected" : "Folders"),
-    h("div",{ class: "folder-list" }, 
-    Object.keys(props.folders).map(i => (
-      h("div", {ontouchstart: [pageForward, e => ({evt: e, to: "file-"+i, from: "tableofcontents"}) ]},
-        h("div", {},
-          h("div", { class: (props.attr.editing)? "text-over slideTextRight" : (props.attr.editing === undefined)? "text-over" : "text-over slideTextLeft" }, 
-            props.folders[i].title, 
-            (props.attr.editing)? h("img", { src : "https://sean-mcdonald.com/images/icons8-pencil-50.png", ontouchstart: [updateFolder, e => ({ evt: e, folder: i }) ]}, "") : ""),
-          h("div", { class: (props.folders[i].clicked)? "circle-under clicked " : "circle-under", ontouchstart : [ tocFolderSelected, e => ({ evt: e, from: "tableofcontents", id: i }) ] }), ""),
-        h("div", {class:"folder-count"}, Object.keys(props.folders[i].files).length+" >")) )  )),
-    footer(props.attr.editing))))
-     
-const folders = (props) => (
-  Object.keys(props.folders).map(i => 
-    h("div", {class: (props.attr.currentPage == "file-"+i)? "page current-page" : "page", id: "file-"+i },
-      h("div", {class:"container"}, 
-        nav("tableofcontents", "file-"+i , true, props.folders[i].editing, i),
-        h("h1", {class:"heading"}, (props.folders[i].editing)? countSelected(props.folders[i].files)+" Selected" : props.folders[i].title),
-        h("div",{ class: "file-list" }, 
-        Object.keys(props.folders[i].files).map(j =>
-          h("div", { ontouchstart: [ pageForward, e => ({ evt:e, to:"note-"+i+"-"+j, from: "file-"+i }) ] }, 
-            h("div", {class: (props.folders[i].editing)? "text-over slideTextRight" : (props.attr.editing === undefined)? "text-over" : "text-over slideTextLeft" },
-              h("div", {class:"file-title"}, title(props.folders[i].files[j].content).title), 
-              h("p", {class:"file-preview"}, title(props.folders[i].files[j].content).content)),
-            h("div", {class: (props.folders[i].files[j].clicked)? "circle-under clicked " : "circle-under", ontouchstart : 
-            [ fileSelected, e => ({ evt: e, from: i, id: j }) ] })) )),
-        fileFooter(props.folders[i].editing, i)  ))  ));
-
-const eachNote = props => (
-  Object.keys(props.folders).map(i => 
-    Object.keys(props.folders[i].files).map(j =>
-    h("div", {class: (props.attr.currentPage == "note-"+i+"-"+j)? "page current-page" : "page", id: "note-"+i+"-"+j },
-      h("div", {class:"container"}, 
-      nav("file-"+i, "note-"+i+"-"+j, false),
-      h("textarea", { rows: 40, cols: 40, onkeyup : [noteKeyDown, e => ({ page: i, note: j, evt : e }) ] }, props.folders[i].files[j].content))) )  ));
-
-const container = props => h("div", {},   
-  tableOfContents(props),
-  folders(props),
-  eachNote(props))
-
-const getDataComplete = (state, data) => { 
   return { 
     ...state,
-    folders:  data 
+    prompt : null,
+    folders: [ ...state.folders ]
   }
 }
 
-app({ init: [ { attr: { currentPage: "tableofcontents", prevPage: "", typingTimer:null } },
-              [ transferData, 
-                { onresponse: getDataComplete, url: "json.php", data: { func: "get-data" } } ]
-            ],
-      node: document.getElementById("hyperapp"),
-      view: state => container(state)  
-   });
+const newFolderNamed = (state, name) =>{
+  return { 
+    ...state,
+    prompt : null,
+    folders: [ ...state.folders, {title: name, files: []} ]
+    
+         }
+}
 
+const fileUpdate = (state, {f, event}) =>{
+  
+  state.folders.forEach(i=>i.files.forEach(j=>{
+    if(j.index == f.index) j.content = event.target.value; 
+  }));
+  
+  
+  return {
+    ...state,
+    folders:[
+      ...state.folders
+    ]
+    
+  }
+  
+}
