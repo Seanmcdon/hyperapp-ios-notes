@@ -1,7 +1,6 @@
 *{
   margin: 0;
   box-sizing: border-box;
-  font-size:1em;
   font-family: "-apple-system", sans-serif;
 }
 
@@ -11,12 +10,6 @@
   background:white;
   width: 100vw;
   min-height: 100vh;
-  padding: 0;
-}
-
-.container {
-    padding-left: 1em;
-    padding-top: 1em;
 }
 
 .current-page{
@@ -27,112 +20,41 @@
   background-color:#F8F8F8;
 }
 
-.nav{
-  font-size: 1.2em;
-  display:  grid;
-  grid-template-columns: 65% 25%;  
-  margin-bottom:.5em;
+.prompt{
+  position: fixed;
+  z-index:11111;
+  width:100vw;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  background: rgb(100, 100, 100, .5);
+  place-content:center;
+  place-items:center;
 }
 
-.footer{
-  position: absolute;
-  top: 80vh;
-  color: blue;
-  text-decoration: underline;
-  left: 70vw;
+.prompt input,
+.prompt button,
+.prompt h3{
+  opacity: 1;
+  margin-top:2em;
+  font-size:1.3em;
 }
 
-.footer img{
-  height: 25px;
-  width: 25px;
-  position: relative;
-  left: 15vw;
+.hide{
+  display: none;
 }
 
-.nav p span{
+#toc-nav p,
+.folder-nav-right{ 
+  font-size: 1.2rem;
   color: orange;
+  text-align:right;
+  padding: .5em 1.5rem .5em .5em;
+  flex-grow: 1;
 }
 
-.nav .nav-left{
-    text-align: left;
-}
-
-.nav .nav-right{
-  text-decoration: underline; 
-  text-decoration-color: orange;  
-  text-align: right;  
-}
-
-.content{
-  padding:2em;
-}
-
-.heading {
-    font-size: 2em;
-    padding: 0 0 .5em 0;
-}
-
-.folder-list > div,
-.file-list > div{
-    background: white;
-    padding: .15em;
-    line-height: 1.75em;
-    display:  grid;
-    grid-template-columns: 90% 10%;
-    position: relative;
-}
-
-.file-list > div{
-  height: 4em;
-}
-
-.folder-list .text-over,
-.file-list .text-over{
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 999;
-  background: white;
-  height: 80%;
-  min-width:10em;
-}
-
-.file-list .text-over{
-  top: .5em;
-}
-
-.text-over img {
-    margin: 0 0 0 1em;
-    width: 1em;
-    height: 1em;
-}
-
-.folder-list .circle-under,
-.file-list .circle-under{
-    position: absolute;
-    left: 0;
-    top: .5em;
-    z-index: 888;
-    border: 1px solid;
-    width: 1em;
-    height: 1em;
-    border-radius: 1em;
-}
-
-.file-list .circle-under{
-    top: 1.75em;
-}
-
-.circle-under.clicked{
-  background-color: orange;
-}
-
-.circle-under:not(.clicked){
-  background-color:white;
-}
-
-.folder-list,
-.file-list{
+#toc-content,
+.folder-content{
     display: grid;
     grid-row-gap: 1px;  
     background: lightgray;
@@ -141,8 +63,68 @@
     padding-bottom: 1px;
 }
 
-.file-title {
-    font-weight: 600;
+#toc-content div,
+.folder-content div{
+    background: white;
+    line-height: 2.75em;
+    display:  grid;
+    grid-template-columns: 75% 25%;
+}
+
+#toc-footer,
+.folder-footer{
+  position: relative;
+  color: blue;
+  text-decoration: underline;
+  text-align:right;
+  margin: 5em 1.5rem;
+}
+
+.folder-nav,
+.file-nav{
+  display: flex;
+  flex-direction: row;
+}
+
+.folder-nav-left,
+.file-nav-left{
+  font-size: .8rem;
+  color: orange;
+  padding: .5rem 1.5rem .5em 1em;
+}
+
+.file-nav{
+  height:4em;
+}
+
+.folder-title-left,
+.file-title-left{
+  background: white;
+  min-width:10em;
+  position: relative;
+}
+
+.folder-title-right,
+.file-title-right{
+  text-align:right;
+}
+
+.circle-under{
+    position: absolute !important;
+    left: .75rem;
+    top: .9rem;
+    z-index: 888;
+    border: 1px solid;
+    height: 1.1rem;
+    border-radius: 1rem;
+    padding-left: 1rem;
+}
+
+.text-over{
+  position: absolute;
+  z-index: 999;
+  padding-left: 1rem;  
+  min-width:10rem;
 }
 
 textarea{
@@ -154,16 +136,39 @@ textarea{
   border: 0px;
 }
 
-.page[data-move="slideOutRight"]{
+.pencil{
+  /*background: no-repeat url("https://sean-mcdonald.com/images/icons8-pencil-50.png"); 
+  background-size: 20px 20px;*/
+  height: 20px;
+  width: 20px;
+}
+
+.pencil::after{
+  content: "\2710"
+}
+
+.circle-under.clicked{
+  background-color: orange !important;
+}
+
+.circle-under:not(.clicked){
+  background-color:white;
+}
+
+.pad-left{
+    padding: .5rem 1.5rem .5rem 1rem;
+}
+
+.slideOutRight{
   animation: .2s ease-in 0s forwards slideOutRight;
 }
-.page[data-move="slideOutLeft"]{
+.slideOutLeft{
   animation: .2s ease-in 0s forwards slideOutLeft;
 }
-.page[data-move="slideInRight"]{
+.slideInRight{
   animation: .2s ease-in 0s forwards slideInRight;
 }
-.page[data-move="slideInLeft"]{
+.slideInLeft{
   animation: .2s ease-in 0s forwards slideInLeft;
 }
 
